@@ -16,3 +16,13 @@ The nodes are structured as a Graph/Adjacency List where each node contains its 
     "links": [1025, 2040]
   }
 }
+
+## 🚀 Use Cases
+AI Driving Extensions: Prevent vanilla vehicle AI from breaking down on long-distance trips (e.g., Los Santos to San Fierro) by streaming nodes in chunks using a dynamic floating buffer.
+
+Custom GPS Radar: Calculate the shortest route between any two points in San Andreas using pure mathematics.
+
+Traffic Manipulation: Spawn or route entities based on accurate road coordinates.
+
+## 🛠️ How it was generated
+Extracted directly from the original game binary files (nodes*.dat) located in the data/paths/ directory and parsed using Little Endian specifications.
