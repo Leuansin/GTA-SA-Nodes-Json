@@ -1,0 +1,93 @@
+const fs = require('fs');
+const path = require('path');
+
+// Configuración de rutas
+const INPUT_DIR = './'; // Carpeta actual
+const OUTPUT_FILE = './nodos.json';
+
+function parseNodesFile(filePath, globalGraph) {
+    const buffer = fs.readFileSync(filePath);
+    
+    if (buffer.length < 20) return;
+
+    // Leer cabecera (Little Endian)
+    const numNodes = buffer.readUInt32LE(0);
+    const numVehicles = buffer.readUInt32LE(4); 
+    const numPedestrians = buffer.readUInt32LE(8); 
+    const numLinks = buffer.readUInt32LE(12);
+
+    const NODE_SIZE = 28;
+    const LINK_SIZE = 2; 
+
+    let currentOffset = 20;
+
+    // 1. Leer los Links
+    const linksPool = [];
+    for (let i = 0; i < numLinks; i++) {
+        if (currentOffset + LINK_SIZE > buffer.length) break;
+        linksPool.push(buffer.readUInt16LE(currentOffset));
+        currentOffset += LINK_SIZE;
+    }
+    
+    // 2. Leer los Nodos
+    for (let i = 0; i < numNodes; i++) {
+        if (currentOffset + NODE_SIZE > buffer.length) break;
+
+        const fileId = path.basename(filePath, '.DAT').replace(/nodes/i, '').toLowerCase();
+        const uniqueId = `${fileId}_${i}`; 
+
+        const rawX = buffer.readInt16LE(currentOffset + 0);
+        const rawY = buffer.readInt16LE(currentOffset + 2);
+        const rawZ = buffer.readInt16LE(currentOffset + 4);
+
+        const x = Number((rawX / 8.0).toFixed(2));
+        const y = Number((rawY / 8.0).toFixed(2));
+        const z = Number((rawZ / 8.0).toFixed(2));
+
+        const linkStartIndex = buffer.readUInt16LE(currentOffset + 12);
+        const linkCount = buffer.readUInt8(currentOffset + 14) & 0x0F; 
+
+        const nodeLinks = [];
+        for (let j = 0; j < linkCount; j++) {
+            const targetLinkIndex = linkStartIndex + j;
+            if (targetLinkIndex < linksPool.length) {
+                nodeLinks.push(`${fileId}_${linksPool[targetLinkIndex]}`);
+            }
+        }
+
+        globalGraph[uniqueId] = {
+            x,
+            y,
+            z,
+            links: nodeLinks
+        };
+
+        currentOffset += NODE_SIZE;
+    }
+}
+
+function main() {
+    const globalGraph = {};
+    
+    const files = fs.readdirSync(INPUT_DIR).filter(file => {
+        const lowerFile = file.toLowerCase();
+        return lowerFile.startsWith('nodes') && lowerFile.endsWith('.dat');
+    });
+    
+    console.log(`Procesando ${files.length} archivos binarios...`);
+
+    files.forEach(file => {
+        const fullPath = path.join(INPUT_DIR, file);
+        try {
+            parseNodesFile(fullPath, globalGraph);
+            console.log(`✓ Procesado con éxito: ${file}`);
+        } catch (error) {
+            console.error(`✕ Error al procesar ${file}:`, error.message);
+        }
+    });
+
+    fs.writeFileSync(OUTPUT_FILE, JSON.stringify(globalGraph, null, 2), 'utf-8');
+    console.log(`\nGrafo exportado correctamente en: ${OUTPUT_FILE}`);
+}
+
+main();
