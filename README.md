@@ -15,7 +15,7 @@ The nodes are structured as a Graph/Adjacency List where each node contains its 
     "z": 10.5,
     "links": [1025, 2040]
   }
-}
+}```
 
 ## 🚀 Use Cases
 AI Driving Extensions: Prevent vanilla vehicle AI from breaking down on long-distance trips (e.g., Los Santos to San Fierro) by streaming nodes in chunks using a dynamic floating buffer.
